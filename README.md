@@ -143,10 +143,10 @@ mango> import /path/to/apk
 
 This is optional and not required for the standard Medusa CLI workflow.
 
-If you want to use the Android MCP server (`medusa_android_mcp.py`), install the MCP SDK separately:
+If you want to use the Android MCP server (`medusa_android_mcp.py`), install the MCP requirements:
 
 ```sh
-pip install "mcp[cli]"
+pip install -r requirements-mcp.txt
 ```
 
 ```sh
