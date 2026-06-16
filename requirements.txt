@@ -8,4 +8,5 @@ click
 colorama
 pick
 PyYAML
+packaging
 urllib3
