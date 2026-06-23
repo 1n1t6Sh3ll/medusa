@@ -17,6 +17,7 @@ from packaging.version import  parse as parse_version, Version
 # Third-party imports
 import click
 import cmd2
+from cmd2.completion import CompletionItem, Completions
 import frida
 import requests
 import yaml
@@ -542,31 +543,42 @@ class Parser(cmd2.Cmd):
 
     ###################################################### complete_ defs start ############################################################
 
-    def complete_list(self, text, line, begidx, endidx) -> list:
+    def _completion_matches(self, text, candidates):
+        return Completions(
+            items=[
+                CompletionItem(candidate)
+                for candidate in candidates
+                if candidate.startswith(text)
+            ]
+        )
+
+    def complete_list(self, text, line, begidx, endidx):
         if len(self.packages) == 0:
             self.refreshPackages()
-        return [package.identifier for package in self.packages if package.identifier.startswith(text)]
+        return self._completion_matches(
+            text, [package.identifier for package in self.packages]
+        )
 
-    def complete_rem(self, text, line, begidx, endidx) -> list:
-        return [mod.Name for mod in self.modManager.staged if mod.Name.startswith(text)]
+    def complete_rem(self, text, line, begidx, endidx):
+        return self._completion_matches(text, [mod.Name for mod in self.modManager.staged])
 
     def complete_run(self, text, line, begidx, endidx) -> list:
         return self.complete_list(text, line, begidx, endidx)
 
     def complete_show(self, text, line, begidx, endidx):
-        return [f for f in self.show_commands if f.startswith(text)]
+        return self._completion_matches(text, self.show_commands)
 
-    def complete_use(self, text, line, begidx, endidx) -> list:
-        return [mod.Name for mod in self.modManager.available if mod.Name.startswith(text)]
+    def complete_use(self, text, line, begidx, endidx):
+        return self._completion_matches(text, [mod.Name for mod in self.modManager.available])
 
-    def complete_info(self, text, line, begidx, endidx) -> list:
-        return [mod.Name for mod in self.modManager.available if mod.Name.startswith(text)]
+    def complete_info(self, text, line, begidx, endidx):
+        return self._completion_matches(text, [mod.Name for mod in self.modManager.available])
 
     def complete_reload(self, text, line, begidx, endidx):
         if "-r" in line.split():
             return self.path_complete(text, line, begidx, endidx)
         else:
-            return []
+            return Completions()
 
     ###################################################### complete_ defs end ############################################################
 

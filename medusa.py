@@ -21,6 +21,7 @@ from pathlib import Path
 
 # Third-party imports
 import cmd2
+from cmd2.completion import CompletionItem, Completions
 import click
 import frida
 import frida_tools
@@ -1796,9 +1797,18 @@ class Parser(cmd2.Cmd):
     def complete_import(self, text, line, begidx, endidx) -> list:
         return self.complete_snippet(text, line, begidx, endidx)
 
-    def complete_list(self, text, line, begidx, endidx) -> list:
+    def _completion_matches(self, text, candidates):
+        return Completions(
+            items=[
+                CompletionItem(candidate)
+                for candidate in candidates
+                if candidate.startswith(text)
+            ]
+        )
+
+    def complete_list(self, text, line, begidx, endidx):
         self.refreshPackages()
-        return [package for package in self.packages if package.startswith(text)]
+        return self._completion_matches(text, self.packages)
 
     def complete_load(self, text, line, begidx, endidx) -> list:
         return self.complete_list(text, line, begidx, endidx)
@@ -1815,39 +1825,41 @@ class Parser(cmd2.Cmd):
     def complete_memmap(self, text, line, begidx, endidx) -> list:
         return self.complete_list(text, line, begidx, endidx)
     
-    def complete_options(self, text, line, begidx, endidx) -> list:
-        return self.get_modules_autocomplete_options(text)
+    def complete_options(self, text, line, begidx, endidx):
+        return self.get_modules_autocomplete_options(text, line, begidx, endidx)
     
-    def complete_rem(self, text, line, begidx, endidx) -> list:
-        return [mod.Name for mod in self.modManager.staged if mod.Name.startswith(text)]
+    def complete_rem(self, text, line, begidx, endidx):
+        return self._completion_matches(text, [mod.Name for mod in self.modManager.staged])
 
     def complete_reload(self, text, line, begidx, endidx):
         if "-r" in line.split():
             return self.path_complete(text, line, begidx, endidx)
         else:
-            return []
+            return Completions()
 
     def complete_run(self, text, line, begidx, endidx) -> list:
         return self.complete_list(text, line, begidx, endidx)
 
     def complete_show(self, text, line, begidx, endidx):
-        return [f for f in self.show_commands if f.startswith(text)]
+        return self._completion_matches(text, self.show_commands)
 
-    def complete_snippet(self, text, line, begidx, endidx) -> list:
-        return [f for f in self.snippets if f.startswith(text)]
+    def complete_snippet(self, text, line, begidx, endidx):
+        return self._completion_matches(text, self.snippets)
 
-    def complete_strace(self, text, line, begidx, endidx) -> list:
+    def complete_strace(self, text, line, begidx, endidx):
         self.refreshPackages()
-        return [package for package in self.packages if package.startswith(text)]
+        return self._completion_matches(text, self.packages)
 
-    def complete_use(self, text, line, begidx, endidx) -> list:
-        return self.get_modules_autocomplete_options(text)
+    def complete_use(self, text, line, begidx, endidx):
+        return self.get_modules_autocomplete_options(text, line, begidx, endidx)
 
-    def complete_info(self, text, line, begidx, endidx) -> list:
-        return self.get_modules_autocomplete_options(text)
+    def complete_info(self, text, line, begidx, endidx):
+        return self.get_modules_autocomplete_options(text, line, begidx, endidx)
     
-    def get_modules_autocomplete_options(self, text) -> list:
-        return [mod.Name for mod in self.modManager.available if mod.Name.startswith(text)]
+    def get_modules_autocomplete_options(self, text, line, begidx, endidx):
+        return self._completion_matches(
+            text, [mod.Name for mod in self.modManager.available]
+        )
 
 
     ###################################################### complete_ defs end ############################################################
