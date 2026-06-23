@@ -22,6 +22,7 @@ from typing import List, Optional
 import cmd2
 import frida
 import requests
+from cmd2.completion import CompletionItem, Completions
 from cmd2.parsing import Statement
 from colorama import Back, Fore, Style
 
@@ -33,6 +34,8 @@ from libraries.manifest_diff import ManifestDiff, ManifestParser
 from libraries.android_flags import describe_flags, INTENT_FLAGS, PENDING_INTENT_FLAGS, CONTENT_FLAGS
 from libraries.questions import *
 from libraries.lib_guava import *
+
+
 
 logging.getLogger().handlers = []  
 setup_logging() 
@@ -1480,38 +1483,33 @@ $adb remount
 
     ###################################################### complete defs start ############################################################
 
+    def _completion_matches(self, text, candidates):
+        candidates = candidates or []
+        return Completions(
+            items=[
+                CompletionItem(candidate)
+                for candidate in candidates
+                if candidate.startswith(text)
+            ]
+        )
+
     # mark for tests, improve completes
     def complete_note(self, text, line, begidx, endidx):
         if self.current_app_sha256 is None:
             components = []
         else:
             components = sorted(['add', 'del', 'show', 'update'])
-        if not text:
-            completions = components[:]
-        else:
-            completions = [f for f in components if f.startswith(text)]
-        return completions
+        return self._completion_matches(text, components)
 
     def complete_deeplink(self, text, line, begidx, endidx):
-        if not text:
-            completions = self.total_deep_links[:]
-        else:
-            completions = [f for f in self.total_deep_links if f.startswith(text)]
-        return completions
+        return self._completion_matches(text, self.total_deep_links)
 
     def complete_diff(self, text, line, begidx, endidx):
         res = self.database.query_db("SELECT DISTINCT packageName from Application order by packageName asc;")
         package_names = []
         for entry in res:
             package_names.append(entry[0])
-
-        if not text:
-            completions = package_names[:]
-            package_names = []
-        else:
-            completions = [f for f in package_names if f.startswith(text)]
-            package_names = []
-        return completions
+        return self._completion_matches(text, package_names)
 
     def complete_jdwp(self, text, line, begidx, endidx):
         return self.get_packages_starting_with(text)
@@ -1544,25 +1542,14 @@ $adb remount
         for entry in res:
             version_name = entry[2] if entry[2] is not None else ''
             appSha256.append(entry[0] + ':' + entry[1] + ':' + version_name)
-
-        if not text:
-            completions = appSha256[:]
-            appSha256 = []
-        else:
-            completions = [f for f in appSha256 if f.startswith(text)]
-            appSha256 = []
-        return completions
+        return self._completion_matches(text, appSha256)
 
     def complete_logcat(self, text, line, begidx, endidx):
         return self.get_packages_starting_with(text)
 
     def complete_proxy(self, text, line, begidx, endidx):
         proxy_cmd = ['set', 'get', 'reset']
-        if not text:
-            completions = proxy_cmd[:]
-        else:
-            completions = [f for f in proxy_cmd if f.startswith(text)]
-        return completions
+        return self._completion_matches(text, proxy_cmd)
 
     def complete_pull(self, text, line, begidx, endidx):
         return self.get_packages_starting_with(text)
@@ -1578,32 +1565,16 @@ $adb remount
                 ['exposure', 'applications', 'activityAlias', 'info', 'permissions', 'activities', 'services',
                  'receivers', 'intentFilters', 'providers', 'deeplinks', 'strings', 'database', 'manifest', 
                  'libraries', 'device', 'secrets'])
-        if not text:
-            completions = components[:]
-        else:
-            completions = [f for f in components if f.startswith(text)]
-        return completions
+        return self._completion_matches(text, components)
 
     def complete_start(self, text, line, begidx, endidx):
-        if not text:
-            completions = self.activity_names[:]
-        else:
-            completions = [f for f in self.activity_names if f.startswith(text)]
-        return completions
+        return self._completion_matches(text, self.activity_names)
 
     def complete_startsrv(self, text, line, begidx, endidx):
-        if not text:
-            completions = self.service_names[:]
-        else:
-            completions = [f for f in self.service_names if f.startswith(text)]
-        return completions
+        return self._completion_matches(text, self.service_names)
 
     def complete_stopsrv(self, text, line, begidx, endidx):
-        if not text:
-            completions = self.services[:]
-        else:
-            completions = [f for f in self.services if f.startswith(text)]
-        return completions
+        return self._completion_matches(text, self.services)
 
     def complete_spawn(self, text, line, begidx, endidx):
         return self.get_packages_starting_with(text)
@@ -1622,12 +1593,8 @@ $adb remount
 
     def get_packages_starting_with(self, text):
         self.init_packages()
-        if not text:
-            completions = self.packages[:]
-            self.packages = []
-        else:
-            completions = [f for f in self.packages if f.startswith(text)]
-            self.packages = []
+        completions = self._completion_matches(text, self.packages)
+        self.packages = []
         return completions
 
     def print_activities(self, all=True):
