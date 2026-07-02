@@ -52,8 +52,23 @@ class ModuleManager:
     def compile(self):
         code = ''
         for mod in self.staged:
-            code += mod.Code + '\n'
+            module_name = json.dumps(mod.Name)
+            code += f'''
+    try {{
+        // Module: {mod.Name}
+    {mod.Code}
+    }} catch (error) {{
+        colorLog("[module failed] " + {module_name}, {{ c: Color.Red }});
+        console.log(error && error.stack ? error.stack : error);
+    }}
+    '''
         return code
+
+    # def compile(self):
+    #     code = ''
+    #     for mod in self.staged:
+    #         code += mod.Code + '\n'
+    #     return code
 
     def findModule(self, pattern):
         return [mod.Name for mod in self.available if pattern.casefold() in mod.Name.casefold()]
